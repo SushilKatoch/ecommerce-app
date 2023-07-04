@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Store\StoreController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -22,7 +24,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('send-mail',[AuthController::class,'userEmailOtp']);
 
 Route::group(['namespace' => 'App\Http\Controllers\Auth', 'as' => 'auth','middleware' =>['cors']], function () {
+  
+    Route::post('login/otp', [AuthController::class,"requestOTP"]);
+    Route::post('login/otp/verify', [AuthController::class,"verifyOTP"]);
+    Route::post('store/kyc', [AuthController::class,"storeDetail"]);
     Route::post("register",[AuthController::class,"register"]);
-    Route::get("find-email/{email}",[AuthController::class,"getUserEmail"]);
-    Route::post('forgot-password', [AuthController::class, 'resetPassword'])->name('forgot-password');
+    Route::get("logout",[AuthController::class,"logout"]);
+
+    //Store
+    Route::post('gstin/kyc', [StoreController::class,"gstKyc"]);
+    Route::post('pickupAddress/kyc', [StoreController::class,"pickupAddressKyc"]);
+    Route::post('bankDetails/kyc', [StoreController::class,"bankDetailsKyc"]);
+    Route::post('supplierDetails/kyc', [StoreController::class,"supplierDetailsKyc"]);
 });

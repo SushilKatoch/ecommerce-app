@@ -13,11 +13,31 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('storeName',30)->nullable();
+            $table->string('fullName',30)->nullable();
+            $table->string('storeAddress')->nullable();
+            $table->string('warehouseAddress')->nullable();
+            $table->string('gst',15)->nullable();
+            $table->string('ifscCode',15)->nullable();
+            $table->string('accountNumber',50)->nullable();
+            $table->string('storeImage')->nullable();
+            $table->string('email',30)->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
+            $table->string('token')->nullable();
             $table->rememberToken();
+            $table->string('mobileNumber',12)->nullable();
+            $table->bigInteger('otp')->nullable();
+            $table->dateTime('otpExpiresIn')->nullable();
+            $table->string('mobileVerified')->nullable();
+            $table->string('country',15)->nullable();
+            $table->bigInteger('storeCategoryId')->nullable();
+            $table->string('loginThrough',30)->nullable();
+            $table->string('verified',10)->nullable();
+            $table->bigInteger('roleId')->nullable();
+            $table->bigInteger('subscriptionId')->nullable();
+            $table->bigInteger('storeActiveId')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
