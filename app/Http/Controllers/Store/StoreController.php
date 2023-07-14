@@ -39,7 +39,7 @@ class StoreController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
      if ($validatorAccess->fails()) {
-           $error = $validatorAuth->errors();
+           $error = $validatorAccess->errors();
            $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -52,7 +52,7 @@ class StoreController extends Controller
 
 
         if ($validator->fails()) {
-              $error = $validatorAuth->errors();
+              $error = $validator->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                  'error' =>  $errors,
@@ -65,9 +65,9 @@ class StoreController extends Controller
             $user->update($request->all());
 
             return response()->json([
-                "status" => 200,
-                "message" => "User Gstin Registered Successfully",
+              "data"=>[
                 "gstin" => $gstin
+                ]
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -133,8 +133,9 @@ class StoreController extends Controller
             $user->save();
             $input['warehouseAddress'] = $request->all();
             return response()->json([
-             
+             "data"=>[
                 "warehouseAddress" => $input['warehouseAddress']
+                ]
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -168,7 +169,7 @@ class StoreController extends Controller
         );
         
           if ($validatorAccess->fails()) {
-                $error = $validatorAuth->errors();
+                $error = $validatorAccess->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -181,7 +182,7 @@ class StoreController extends Controller
         ]);
 
         if ($validator->fails()) {
-              $error = $validatorAuth->errors();
+              $error = $validator->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -198,9 +199,10 @@ class StoreController extends Controller
             $user->save();
 
             return response()->json([
-              
+              "data"=>[
                 "ifscCode" => $ifscCode,
                 "accountNumber" => $accountNumber
+                ]
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -234,7 +236,7 @@ class StoreController extends Controller
         );
         
           if ($validatorAccess->fails()) {
-                $error = $validatorAuth->errors();
+                $error = $validatorAccess->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -248,7 +250,7 @@ class StoreController extends Controller
         ]);
 
         if ($validator->fails()) {
-              $error = $validatorAuth->errors();
+              $error = $validator->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -261,10 +263,10 @@ class StoreController extends Controller
             $user->update($request->all());
 
             return response()->json([
-                "status" => 200,
-                "message" => "User Store Supplier Details Registered Successfully",
+               "data"=>[
                 "storeName" => $storeName,
                 "fullName" => $fullName
+                ]
 
             ]);
         } catch (ValidationException $e) {
@@ -299,7 +301,7 @@ class StoreController extends Controller
         );
         
           if ($validatorAccess->fails()) {
-                $error = $validatorAuth->errors();
+                $error = $validatorAccess->errors();
                 $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -311,7 +313,7 @@ class StoreController extends Controller
             'userId' => 'required|min:10',
         ]);
         if ($validator->fails()) {
-              $error = $validatorAuth->errors();
+              $error = $validator->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                'error' =>  $errors,
@@ -324,9 +326,9 @@ class StoreController extends Controller
             $user->save();
 
             return response()->json([
-                "status" => 200,
-                "message" => "User Store Supplier Details Registered Successfully",
+                "data"=>[
                 "storeName" => $categoryId
+                ]
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);

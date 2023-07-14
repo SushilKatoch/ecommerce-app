@@ -31,7 +31,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-              $error = $validatorAuth->errors();
+              $error = $validator->errors();
               $errors=collect($error)->flatten();
             return response()->json([
                'error' => $errors,
@@ -100,7 +100,7 @@ class AuthController extends Controller
         );
 
         if ($validator->fails()) {
-              $error = $validatorAuth->errors();
+              $error = $validator->errors();
               $errors=collect($error)->flatten();
             return response([
                 'error' =>  $errors,
@@ -140,10 +140,11 @@ class AuthController extends Controller
 
                 // Return JWT token
                 return response()->json([
-                   
+                   "data"=>[
                     "user" => "Existing User",
                     "token" => $token,
                     "auth_token" => $auth_token
+                    ]
                 ]);
             }
         } catch (ValidationException $e) {
@@ -161,8 +162,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        auth()->authToken = null;
-        auth()->save;
+       $user = User::find(Auth::user()->id);
+       $user->authToken =null;
+        $user->save();
         auth()->logout();
         
         return response()->json(['data'=>[ 'message' => 'User logged out successfully']]);
@@ -192,7 +194,7 @@ class AuthController extends Controller
         ['Authorization' => ['required',Rule::exists('users','access_token')]]
     );
       if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -209,8 +211,7 @@ class AuthController extends Controller
                 'mobileNumber'
             )->where('id', Auth::user()->id)->first();
             return response([
-                'status' => 200,
-                'message' => 'User fetched successfully',
+                
                 'data' => $user
             ],200);
         } catch (ValidationException $e) {

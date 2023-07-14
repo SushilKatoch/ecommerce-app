@@ -54,7 +54,7 @@ class ProductCategoriesController extends Controller
             ]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -76,7 +76,7 @@ class ProductCategoriesController extends Controller
             'seoData'            => 'nullable',
         ]);
         if ($validator->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validator->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -151,7 +151,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -215,7 +215,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -245,8 +245,10 @@ class ProductCategoriesController extends Controller
                     "data" => $productCategory
                 ]);
             } else {
-                return response()->json([
-                    'error' => "No Product Category Found "
+                 
+                $array = [ 'No Product Category Found'];
+                return response([
+                    'error'=>$array
                 ], 404);
             }
         } catch (ValidationException $e) {
@@ -285,7 +287,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -345,8 +347,10 @@ class ProductCategoriesController extends Controller
                     "data" => $productCategoryUpdated
                 ]);
             } else {
-                return response()->json([
-                    'error' => "No Product Category Found "
+                 
+                $array = [ 'No Product Category Found'];
+                return response([
+                    'error'=>$array
                 ], 404);
             }
         } catch (ValidationException $e) {
@@ -385,7 +389,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -398,7 +402,7 @@ class ProductCategoriesController extends Controller
             $productCategoryDelete = productCategories::withTrashed()->select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
                 ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
-                'status' => '200', 'message' => "Product Category Deleted", "data" => $productCategoryDelete
+                 "data" => $productCategoryDelete
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -437,7 +441,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -448,7 +452,7 @@ class ProductCategoriesController extends Controller
             $productCategory = productCategories::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
                 ->where('authId', Auth::user()->id)->onlyTrashed()->orderBy('deleted_at', 'desc')->paginate();
             return response()->json([
-                'status' => '200', 'message' => "All Product Categories Trashed", "data" => $productCategory
+                 "data" => $productCategory
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -488,7 +492,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
@@ -500,7 +504,7 @@ class ProductCategoriesController extends Controller
             $productCategoryRestore = productCategories::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
                 ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
-                'status' => '200', 'message' => "Product Category Restored", "data" => $productCategoryRestore
+                "data" => $productCategoryRestore
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -533,7 +537,7 @@ class ProductCategoriesController extends Controller
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
         if ($validatorAccess->fails()) {
-            $error = $validatorAuth->errors();
+            $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
