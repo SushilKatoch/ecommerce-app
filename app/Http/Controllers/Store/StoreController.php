@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Modules\Category\Entities\categories;
 
 class StoreController extends Controller
 {
@@ -310,7 +311,7 @@ class StoreController extends Controller
         // validation
 
         $validator = Validator::make($request->all(), [
-            'userId' => 'required|min:10',
+            'categoryId' => 'required|min:8',
         ]);
         if ($validator->fails()) {
               $error = $validator->errors();
@@ -320,15 +321,18 @@ class StoreController extends Controller
             ], 400);
         }
         try {
-            $categoryId = $request->CategoryId;
+            $categoryId = $request->categoryId;
             $user = User::find(Auth::user()->id);
             $user->categoryId = $categoryId;
             $user->save();
+            $catgory =  $category = categories::select(
+                'name as categoryName'
+            )->where('uuid',$categoryId)->where('deleted_at','=',null)->first();
 
             return response()->json([
-                "data"=>[
-                "storeName" => $categoryId
-                ]
+               
+                "data" => $category
+                
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);

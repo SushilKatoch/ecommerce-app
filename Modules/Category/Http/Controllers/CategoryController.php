@@ -68,19 +68,19 @@ class CategoryController extends Controller
             ], 400);
         }
         try {
-            $uuid =Str::uuid()->getHex();
+            $uuid = Str::uuid()->getHex();
             $input = $request->all();
-            $input['uuid'] =$uuid ;
-            $slug=Str::slug($request->name);
+            $input['uuid'] = $uuid;
+            $slug = Str::slug($request->name);
             $input['slug'] = $slug;
-           
+
             $category = categories::create($input);
             $categoryId = $category->uuid;
-            $categories = categories::select('uuid', 'name','slug' ,'deleted_at', 'created_at', 'updated_at')
+            $categories = categories::select('uuid', 'name', 'slug', 'deleted_at', 'created_at', 'updated_at')
                 ->where('uuid', $categoryId)->first();
             return response()->json([
-                 'data' => $categories
-            ]);
+                'data' => $categories
+            ], 200);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
@@ -94,7 +94,6 @@ class CategoryController extends Controller
      */
     public function showAll(Request $request)
     {
-       
         $authToken = $request->header('Authtoken');
 
         $validatorAuth = Validator::make(
@@ -116,7 +115,7 @@ class CategoryController extends Controller
             ['Authorization' => $jwtToken],
             ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
         );
-        if ($validatorAuth->fails()) {
+        if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
@@ -130,10 +129,10 @@ class CategoryController extends Controller
                 'deleted_at',
                 'created_at',
                 'updated_at'
-            )->where('deleted_at','=',null)->get();
+            )->where('deleted_at', '=', null)->first();
             return response()->json([
-                'status' => '200', 'message' => "All Product Categories Images ", "data" => $category
-            ]);
+                "data" => $category
+            ], 200);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
@@ -148,35 +147,36 @@ class CategoryController extends Controller
      */
     public function show(Request $request, $uuid)
     {
-        if ($request->header('Authtoken') == null) {
-            return response()->json([
-                'status' => '401', 'error' => "No auth token"
-            ], 401);
-        }
-        $auth_token = $request->header('Authtoken');
+        $authToken = $request->header('Authtoken');
 
-        $auth = User::where('authToken', $auth_token)->first();
-        if ($auth == null) {
+        $validatorAuth = Validator::make(
+            ['Authtoken' => $authToken],
+            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
+        );
+
+        if ($validatorAuth->fails()) {
+            $error = $validatorAuth->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "Invalid Auth Token"
+                'error' =>  $errors,
             ], 401);
         }
-        if ($request->bearerToken() == null) {
+
+        $jwtToken = $request->bearerToken();
+
+        $validatorAccess = Validator::make(
+            ['Authorization' => $jwtToken],
+            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
+        );
+        if ($validatorAccess->fails()) {
+            $error = $validatorAccess->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "No access token"
-            ], 401);
-        }
-        if ($auth->access_token != $request->bearerToken()) {
-            return response()->json([
-                'status' => '401', 'error' => "Invalid Token"
-            ], 401);
-        } elseif (Auth::user() == null) {
-            return response()->json([
-                'status' => '401', 'error' => "Session Expired"
+                'error' =>  $errors,
             ], 401);
         }
         try {
-            $categoryExists = categories::where('uuid', $uuid)->where('deleted_at','=',null)->exists();
+            $categoryExists = categories::where('uuid', $uuid)->where('deleted_at', '=', null)->exists();
             if ($categoryExists) {
                 $category = categories::where('uuid', $uuid)
                     ->select(
@@ -185,13 +185,14 @@ class CategoryController extends Controller
                         'deleted_at',
                         'created_at',
                         'updated_at'
-                    )->where('deleted_at','=',null)->get();
+                    )->where('deleted_at', '=', null)->get();
                 return response()->json([
-                    'status' => '200', 'message' => "Category Found", "data" => $category
+                    "data" => $category
                 ]);
             } else {
-                return response()->json([
-                    'status' => '404', 'message' => "Category Not Found "
+                $array = ['No Product Category Found'];
+                return response([
+                    'error' => $array
                 ], 404);
             }
         } catch (ValidationException $e) {
@@ -209,31 +210,32 @@ class CategoryController extends Controller
      */
     public function update(Request $request)
     {
-        if ($request->header('Authtoken') == null) {
-            return response()->json([
-                'status' => '401', 'error' => "No auth token"
-            ], 401);
-        }
-        $auth_token = $request->header('Authtoken');
+        $authToken = $request->header('Authtoken');
 
-        $auth = User::where('authToken', $auth_token)->first();
-        if ($auth == null) {
+        $validatorAuth = Validator::make(
+            ['Authtoken' => $authToken],
+            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
+        );
+
+        if ($validatorAuth->fails()) {
+            $error = $validatorAuth->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "Invalid Auth Token"
+                'error' =>  $errors,
             ], 401);
         }
-        if ($request->bearerToken() == null) {
+
+        $jwtToken = $request->bearerToken();
+
+        $validatorAccess = Validator::make(
+            ['Authorization' => $jwtToken],
+            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
+        );
+        if ($validatorAccess->fails()) {
+            $error = $validatorAccess->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "No access token"
-            ], 401);
-        }
-        if ($auth->access_token != $request->bearerToken()) {
-            return response()->json([
-                'status' => '401', 'error' => "Invalid Token"
-            ], 401);
-        } elseif (Auth::user() == null) {
-            return response()->json([
-                'status' => '401', 'error' => "Session Expired"
+                'error' =>  $errors,
             ], 401);
         }
         // validation
@@ -243,8 +245,10 @@ class CategoryController extends Controller
 
 
         if ($validator->fails()) {
+            $error = $validator->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '400', 'error' =>  $validator->errors(),
+                'status' => '400', 'error' =>  $errors,
             ], 400);
         }
         try {
@@ -265,11 +269,12 @@ class CategoryController extends Controller
                 )
                     ->where('uuid',  $category->uuid)->first();
                 return response()->json([
-                    'status' => '200', 'message' => "Category Updated", "data" => $categoryUpdate
+                    "data" => $categoryUpdate
                 ]);
             } else {
-                return response()->json([
-                    'status' => '404', 'message' => "No Category Found "
+                $array = ['No Product Category Found'];
+                return response([
+                    'error' => $array
                 ], 404);
             }
         } catch (ValidationException $e) {
@@ -286,31 +291,32 @@ class CategoryController extends Controller
      */
     public function destroy(Request $request, $uuid)
     {
-        if ($request->header('Authtoken') == null) {
-            return response()->json([
-                'status' => '401', 'error' => "No auth token"
-            ], 401);
-        }
-        $auth_token = $request->header('Authtoken');
+        $authToken = $request->header('Authtoken');
 
-        $auth = User::where('authToken', $auth_token)->first();
-        if ($auth == null) {
+        $validatorAuth = Validator::make(
+            ['Authtoken' => $authToken],
+            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
+        );
+
+        if ($validatorAuth->fails()) {
+            $error = $validatorAuth->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "Invalid Auth Token"
+                'error' =>  $errors,
             ], 401);
         }
-        if ($request->bearerToken() == null) {
+
+        $jwtToken = $request->bearerToken();
+
+        $validatorAccess = Validator::make(
+            ['Authorization' => $jwtToken],
+            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
+        );
+        if ($validatorAccess->fails()) {
+            $error = $validatorAccess->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "No access token"
-            ], 401);
-        }
-        if ($auth->access_token != $request->bearerToken()) {
-            return response()->json([
-                'status' => '401', 'error' => "Invalid Token"
-            ], 401);
-        } elseif (Auth::user() == null) {
-            return response()->json([
-                'status' => '401', 'error' => "Session Expired"
+                'error' =>  $errors,
             ], 401);
         }
         try {
@@ -327,7 +333,7 @@ class CategoryController extends Controller
             )->where('uuid',  $uuid)->first();
 
             return response()->json([
-                'status' => '200', 'message' => "Category Deleted", "data" => $categoryDelete
+                "data" => $categoryDelete
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -344,31 +350,32 @@ class CategoryController extends Controller
      */
     public function trashed(Request $request)
     {
-        if ($request->header('Authtoken') == null) {
-            return response()->json([
-                'status' => '401', 'error' => "No auth token"
-            ], 401);
-        }
-        $auth_token = $request->header('Authtoken');
+        $authToken = $request->header('Authtoken');
 
-        $auth = User::where('authToken', $auth_token)->first();
-        if ($auth == null) {
+        $validatorAuth = Validator::make(
+            ['Authtoken' => $authToken],
+            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
+        );
+
+        if ($validatorAuth->fails()) {
+            $error = $validatorAuth->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "Invalid Auth Token"
+                'error' =>  $errors,
             ], 401);
         }
-        if ($request->bearerToken() == null) {
+
+        $jwtToken = $request->bearerToken();
+
+        $validatorAccess = Validator::make(
+            ['Authorization' => $jwtToken],
+            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
+        );
+        if ($validatorAccess->fails()) {
+            $error = $validatorAccess->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "No access token"
-            ], 401);
-        }
-        if ($auth->access_token != $request->bearerToken()) {
-            return response()->json([
-                'status' => '401', 'error' => "Invalid Token"
-            ], 401);
-        } elseif (Auth::user() == null) {
-            return response()->json([
-                'status' => '401', 'error' => "Session Expired"
+                'error' =>  $errors,
             ], 401);
         }
 
@@ -382,7 +389,7 @@ class CategoryController extends Controller
                 'updated_at'
             )->orderBy('deleted_at', 'desc')->paginate();
             return response()->json([
-                'status' => '200', 'message' => "All Categories Trashed", "data" => $category
+                "data" => $category
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -400,35 +407,35 @@ class CategoryController extends Controller
      */
     public function restore(Request $request, $uuid)
     {
-        if ($request->header('Authtoken') == null) {
-            return response()->json([
-                'status' => '401', 'error' => "No auth token"
-            ], 401);
-        }
-        $auth_token = $request->header('Authtoken');
+        $authToken = $request->header('Authtoken');
 
-        $auth = User::where('authToken', $auth_token)->first();
-        if ($auth == null) {
+        $validatorAuth = Validator::make(
+            ['Authtoken' => $authToken],
+            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
+        );
+
+        if ($validatorAuth->fails()) {
+            $error = $validatorAuth->errors();
+            $errors = collect($error)->flatten();
             return response()->json([
-                'status' => '401', 'error' => "Invalid Auth Token"
-            ], 401);
-        }
-        if ($request->bearerToken() == null) {
-            return response()->json([
-                'status' => '401', 'error' => "No access token"
-            ], 401);
-        }
-        if ($auth->access_token != $request->bearerToken()) {
-            return response()->json([
-                'status' => '401', 'error' => "Invalid Token"
-            ], 401);
-        } elseif (Auth::user() == null) {
-            return response()->json([
-                'status' => '401', 'error' => "Session Expired"
+                'error' =>  $errors,
             ], 401);
         }
 
-        try{
+        $jwtToken = $request->bearerToken();
+
+        $validatorAccess = Validator::make(
+            ['Authorization' => $jwtToken],
+            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
+        );
+        if ($validatorAccess->fails()) {
+            $error = $validatorAccess->errors();
+            $errors = collect($error)->flatten();
+            return response()->json([
+                'error' =>  $errors,
+            ], 401);
+        }
+        try {
             $category = categories::withTrashed()->where('uuid', '=', $uuid);
             $category->restore();
             $categoryRestore = categories::select(
@@ -442,13 +449,12 @@ class CategoryController extends Controller
             )
                 ->where('uuid',  $uuid)->first();
             return response()->json([
-                'status' => '200', 'message' => "Product Category Images Restored", "data" => $categoryRestore
+                "data" => $categoryRestore
             ]);
-        }catch (ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
             return response()->json(['error' => 'Something went wrong'], 500);
         }
-       
     }
 }
