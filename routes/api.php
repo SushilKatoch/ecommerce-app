@@ -21,14 +21,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::get('send-mail',[AuthController::class,'userEmailOtp']);
 
-Route::group(['namespace' => 'App\Http\Controllers\Auth', 'as' => 'auth','middleware' =>['cors']], function () {
-  
-    Route::post('login/otp', [AuthController::class,"requestOTP"]);
+
+Route::group(['namespace' => 'App\Http\Controllers\Auth', 'as' => 'api','middleware' =>['cors']], function () {
+    Route::post('requestOtp',[AuthController::class,'requestOtp']);
+ 
     Route::post('login/otp/verify', [AuthController::class,"verifyOTP"]);
     Route::post('store/kyc', [AuthController::class,"storeDetail"]);
     Route::post("register",[AuthController::class,"register"]);
+    Route::post("verifyToken",[AuthController::class,"verifyToken"]);
+    Route::get("getUser",[AuthController::class,"getUser"]);
     Route::get("logout",[AuthController::class,"logout"]);
 
     //Store

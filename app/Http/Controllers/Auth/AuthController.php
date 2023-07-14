@@ -17,111 +17,142 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Response;
-
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
-    // public function __construct()
-    // {
-    //     $this->middleware('auth:api', ['except' => ['login', 'register']]);
-    // }
+   
 
     public function requestOtp(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|max:120',
+        ]);
 
-
-        $otp = rand(1000, 9999);
-        $input = $request->all();
-        $input['otp'] = $otp;
-        $input['otpExpiresIn'] = Carbon::now()->addMinutes(10);
-        $token =Str::random(32);
-        $input['token'] = $token;
-        $user = User::where('email', $request->input('email'))->exists();
-
-        if ($user == false) {
-            $store = User::create($input);
-        } else {
-            $user = User::where('email', $request->input('email'))->first();
-
-            $user->otp =  $otp;
-            $user->token = Hash::make($token);
-            $user->otpExpiresIn = !empty($request->otpExpiresIn) ? $request->otpExpiresIn : $user->otpExpiresIn;
-            $user->save();
+        if ($validator->fails()) {
+              $error = $validatorAuth->errors();
+              $errors=collect($error)->flatten();
+            return response()->json([
+               'error' => $errors,
+            ], 400);
         }
-
-        // send otp in the email
-
-        $otpDetail = 'Your OTP is : ' . $otp;
-        $email = $request->email;
-
         try {
+            $otp = rand(1000, 9999);
+            $input = $request->all();
+            $input['otp'] = $otp;
+            $input['otpExpiresIn'] = Carbon::now()->addMinutes(10);
+            $token = Str::random(32);
+            $input['token'] = $token;
+            $user = User::where('email', $request->input('email'))->exists();
+
+            if ($user == false) {
+                $store = User::create($input);
+            } else {
+                $user = User::where('email', $request->input('email'))->first();
+
+                $user->otp =  $otp;
+                $user->token = $token;
+                $user->otpExpiresIn = !empty($request->otpExpiresIn) ? $request->otpExpiresIn : $user->otpExpiresIn;
+                $user->save();
+            }
+
+            // send otp in the email
+
+            $otpDetail = 'Your OTP is : ' . $otp;
+            $email = $request->email;
+
+
 
             Mail::send('emails.otpEmail', ['email' => $email, 'otp' => $otpDetail], function ($message) use ($email, $otpDetail) {
                 $message->to($email);
                 $message->subject('Otp Verification');
             });
 
-            return response(["status" => 200, "message" => "OTP sent successfully",'token' => $token]);
+            return response(['data' => ['token'=>$token]],200);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            echo $e->getMessage();
-
-            return response(["status" => 401, 'message' => 'Invalid']);
+            return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
     public function verifyOTP(Request $request)
     {
+        $otp = $request->otp;
+        $token = $request->token;
         // Validate the request
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'otp' => 'required',
-            'token'=>'required',
-        ]);
+        $validator = Validator::make(
+           [
+               'otp'=>$otp,
+               'token'=>$token
+               ],
+               [
+                   'otp'=>[
+                       'required',Rule::exists('users','otp')
+                       ],
+                    'token'=>[
+                        'required'
+                        ],
+                    
+                ]
+                      
+        );
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-     
-        $user = User::where('email', $request->input('email'))->first();
-       
-        if (!$user) {
-            return response()->json(['error' => 'Store not found.'], 404);
-        }
-      
-        // Verify OTP
-        if ($user->otp != $request->input('otp')) {
-            return response()->json(['error' => 'Invalid OTP.'], 401);
-        }elseif(!Hash::check($request->input('token'), $user->token))
-        {
-            return response()->json(['error' => 'Invalid Token.'], 401);
+              $error = $validatorAuth->errors();
+              $errors=collect($error)->flatten();
+            return response([
+                'error' =>  $errors,
+            ], 400);
         }
 
-        $token = Auth::guard('api')->login($user);
+        try {
+            $user = User::where('token', $request->input('token'))->first();
 
-        // Clear the OTP field in the user model
-        $user->otp = null;
-        $user->save();
-        if ($user->emailVerified == null) {
-            $user->emailVerified = "true";
+            // Verify OTP
+            if ($user->otp != $request->input('otp')) {
+                return response()->json([
+                    'error' => 'Invalid OTP.'
+                ], 400);
+            }
+
+            $token = Auth::guard('api')->login($user);
+            $auth_token = Str::random(32);
+            // Clear the OTP field in the user model
+            $user->otp = null;
+            $user->access_token = $token;
+            $user->authToken = $auth_token;
             $user->save();
-        // Return JWT token
-        return response()->json([
-            "status" => 200,
-            "message" => "User Store Logged In Successfully",
-            "user" =>"New User",
-            "token" => $token
-        ]);
-        }else{
-  // Return JWT token
-  return response()->json([
-    "status" => 200,
-    "message" => "User Store Logged In Successfully",
-    "user" =>"Existing User",
-    "token" => $token
-]);
+            if ($user->emailVerified == null) {
+                $user->emailVerified = "true";
+
+                $user->save();
+                // Return JWT token
+                return response()->json([
+                    "data"=>[
+                        "user" => "New User",
+                    "token" => $token,
+                    "authToken" => $auth_token
+                        ]
+                ]);
+            } else {
+
+                // Return JWT token
+                return response()->json([
+                   
+                    "user" => "Existing User",
+                    "token" => $token,
+                    "auth_token" => $auth_token
+                ]);
+            }
+        } catch (ValidationException $e) {
+            return response()->json(['error' => $e->errors()], 422);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Something went wrong'], 500);
         }
         // Generate JWT token
-      
+
     }
 
     /**
@@ -130,18 +161,90 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-
+        auth()->authToken = null;
+        auth()->save;
         auth()->logout();
-        return response()->json(['status' => 'success', 'message' => 'User logged out successfully']);
+        
+        return response()->json(['data'=>[ 'message' => 'User logged out successfully']]);
     }
 
-    public function getUser()
+    public function getUser(Request $request)
     {
-        $user = User::findorFail(Auth::user()->id);
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User fetched successfully',
-            'data' => $user
-            ]);
+     $authToken = $request->header('Authtoken');
+
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
+
+     if ($validatorAuth->fails()) {
+           $error = $validatorAuth->errors();
+              $errors=collect($error)->flatten();
+            return response()->json([
+                'error' =>  $errors,
+            ], 401);
+        }
+
+     $jwtToken = $request->bearerToken();
+
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
+      if ($validatorAccess->fails()) {
+            $error = $validatorAuth->errors();
+            $errors=collect($error)->flatten();
+            return response()->json([
+                'error' =>  $errors,
+            ], 401);
+        }
+        try {
+            $user =User::select(
+                'fullName',
+                'storeAddress',
+                'warehouseAddress',
+                'gstin',
+                'storeImage',
+                'email',
+                'mobileNumber'
+            )->where('id', Auth::user()->id)->first();
+            return response([
+                'status' => 200,
+                'message' => 'User fetched successfully',
+                'data' => $user
+            ],200);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => $e->errors()], 422);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Something went wrong'], 500);
+        }
+    }
+
+    public function verifyToken($token)
+    {   
+        try{
+        if (User::where('token', '=', $token)->exists()) {
+            $user = User::where('token', '=', $token)->first();
+            $email = $user->email;
+            return response([
+                'data'=>[
+                    'isValid' => true,
+                'email' => $email
+                    ]
+                
+            ],200);
+        } else {
+            return response([
+                'data' =>[
+                      'isValid' => false,
+                    ]
+              
+            ],400);
+        }
+        }  catch (ValidationException $e) {
+            return response()->json(['error' => $e->errors()], 422);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Something went wrong'], 500);
+        }
     }
 }

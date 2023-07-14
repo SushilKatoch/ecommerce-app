@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-
 class Store extends Model
 {
     use HasFactory;
@@ -19,9 +18,8 @@ class Store extends Model
         'storeImage',
         'email',
         'mobileNumber',
-        'gstin',
+        'gst',
         'otp',
-        'emailVerified',
         'otpExpiresIn',
         'mobileVerified',
         'country',
@@ -29,6 +27,7 @@ class Store extends Model
         'storeCategoryId',
         'loginThrough',
         'roleId',
+        'bankDetails',
         'subscriptionId',
         'storeActiveId',
         'ifscCode',

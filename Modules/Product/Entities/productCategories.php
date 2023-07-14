@@ -1,24 +1,26 @@
 <?php
 
-namespace Modules\Alumni\Entities;
+namespace Modules\Product\Entities;
 
+use App\Models\BaseModel;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Convocation extends Model
+class productCategories extends BaseModel
 {
     use LogsActivity;
     use SoftDeletes;
 
-    protected $table = 'convocation';
+    protected $table = 'product_categories';
 
     protected $dates = [
         'deleted_at',
-        'published_at',
-        'moderated_at',
     ];
+    protected $casts = [
+        'images' => 'array',
+    ]; 
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -45,7 +47,14 @@ class Convocation extends Model
             $this->attributes['published_at'] = Carbon::now();
         }
     }
+    public function setSlugAttribute($value)
+    {
+        $this->attributes['slug'] = slug_format(trim($value));
 
+        if (empty($value)) {
+            $this->attributes['slug'] = slug_format(trim($this->attributes['name']));
+        }
+    }
    
     /**
      * Get the list of Published Articles.

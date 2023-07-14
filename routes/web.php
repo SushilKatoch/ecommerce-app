@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Middleware\Cors;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,4 +18,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get('requestOtp',[AuthController::class,'requestOtp']);
+Route::get('requestOtp',[AuthController::class,'requestOtp'])->middleware('cors');

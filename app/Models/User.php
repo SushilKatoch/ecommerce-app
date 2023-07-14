@@ -30,6 +30,7 @@ class User extends Authenticatable implements JWTSubject
         'otpExpiresIn',
         'mobileVerified',
         'country',
+        'bankDetails',
         'warehouseAddress',
         'storeCategoryId',
         'loginThrough',
@@ -59,6 +60,8 @@ class User extends Authenticatable implements JWTSubject
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'warehouseAddress' => 'array',
+        'bankDetails' => 'array'
     ];
 
     public function getJWTIdentifier()

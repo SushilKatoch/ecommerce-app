@@ -1,15 +1,16 @@
 {
-    "name": "nwidart/product",
-    "description": "",
+    "name": "ecommerce/product",
+    "description": "Product Module of ECommerce",
     "authors": [
         {
-            "name": "Nicolas Widart",
-            "email": "n.widart@gmail.com"
+            "name": "ecommerce"
         }
     ],
     "extra": {
         "laravel": {
-            "providers": [],
+            "providers": [
+                "Modules\\Product\\Providers\\ProductServiceProvider"
+            ],
             "aliases": {
 
             }

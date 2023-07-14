@@ -13,16 +13,19 @@ return new class extends Migration
     {
         Schema::create('product_categories', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('authId')->nullable();
+            $table->string('uuid')->nullable();
             $table->string('name',50)->nullable();
             $table->string('slug',50)->nullable();
-            $table->string('images')->nullable();
-            $table->string('bannerImage')->nullable();
-            $table->string('bannerImageMobile')->nullable();
+            $table->bigInteger('imagesId')->nullable();
+            $table->bigInteger('bannerImageId')->nullable();
+            $table->bigInteger('bannerImageMobileId')->nullable();
             $table->text('description')->nullable();
-            $table->string('isActive',10)->nullable();
-            $table->string('inStock',10)->nullable();
+            $table->enum('isActive', ['true','false'])->default('false');
+            $table->string('inStock',20)->nullable();
             $table->unsignedBigInteger('parentId')->nullable();
             $table->string('parentName')->nullable();
+            $table->unsignedBigInteger('orderBy')->nullable();
             $table->json('seoData')->nullable();
             $table->softDeletes();
             $table->timestamps();
