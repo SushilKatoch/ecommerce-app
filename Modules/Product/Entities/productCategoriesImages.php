@@ -24,5 +24,15 @@ class productCategoriesImages extends BaseModel
             ->dontSubmitEmptyLogs()
             ->useLogName($this->table);
     }
+
+    public function categoryImages()
+    {
+        return $this->hasMany('Modules\Product\Entities\productCategory','categoryImageId');
+    }
+
+    public function bannerImages()
+    {
+        return $this->hasMany('Modules\Product\Entities\productCategory','bannerImageId');
+    }
     
 }

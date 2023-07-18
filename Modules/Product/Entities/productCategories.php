@@ -5,6 +5,7 @@ namespace Modules\Product\Entities;
 use App\Models\BaseModel;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -21,6 +22,15 @@ class productCategories extends BaseModel
     protected $casts = [
         'images' => 'array',
     ]; 
+    
+    protected $hidden = [
+        'authId',
+        'categoryImageId',
+        'bannerImageId',
+        'inStock',
+        'parentId',
+        'parentName'
+    ];
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -80,6 +90,24 @@ class productCategories extends BaseModel
         return $query->where('status', '=', '1')
                         ->whereDate('published_at', '<=', Carbon::today()->toDateString())
                         ->orderBy('published_at', 'desc');
+    }
+    
+     public function category(): HasOne
+    {
+        return $this->hasOne('Modules\Product\Entities\productCategoriesImages','uuid','categoryImageId')
+          ->select('uuid','name','path','imageDescription','alt');
+    }
+    
+//   public function category()
+//     {
+//         return $this->hasMany('Modules\Product\Entities\productCategoriesImages','uuid','categoryImageId')
+//                     ->select('uuid','name','path','imageDescription','alt');
+//     }
+
+    public function banner(): HasOne
+    {
+        return $this->hasOne('Modules\Product\Entities\productCategoriesImages','uuid','bannerImageId')
+          ->select('uuid','name','path','imageDescription','alt');
     }
 
     

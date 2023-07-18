@@ -56,7 +56,7 @@ class ProductCategoriesImagesController extends Controller
         }
         // validation
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpg,png,jpeg,gif,svg|max:2048'
+            'image' => 'required|image|mimes:jpg,png,jpeg,gif,svg,webp|max:2048'
         ]);
 
 

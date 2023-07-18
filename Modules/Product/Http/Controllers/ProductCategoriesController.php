@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Modules\Product\Entities\productCategories;
 use Modules\Product\Http\Requests\productCategoriesRequest;
 use Illuminate\Support\Str;
@@ -65,7 +66,8 @@ class ProductCategoriesController extends Controller
         $validator = Validator::make($request->all(), [
             'name'              => ['required', Rule::unique('product_categories', 'name')->where('authId', $userId)],
             // 'slug'              => 'nullable|max:191|unique:product_categories',
-            'images'            => 'nullable',
+            'categoryImageId'            => 'nullable',
+            'bannerImageId'        => 'nullable',
             'description'           => 'nullable',
             'bannerImage'              => 'nullable',
             'bannerImageMobile'       => 'nullable',
@@ -85,36 +87,25 @@ class ProductCategoriesController extends Controller
         try {
             $input = $request->all();
 
-
+            $productOrder =productCategories::where('authId',auth()->id())->count();
             $input['slug'] = Str::slug($request->name);
             $input['uuid'] = Str::uuid()->getHex();
             $input['authId'] = Auth::user()->id;
-
+            $input['orderBy'] = ++$productOrder;
+         
+            if($request->categoryImageId == null){
+                $input['categoryImageId'] ='6fe520f76a014a3a9f9671be8a766012';
+            }
+            if($request->bannerImageId == null){
+                $input['bannerImageId'] ='5832142d44ff4caab59f8253e9fdecd9';
+            }
 
             $product = productCategories::create($input);
-            $productCategoryUpdate = productCategories::where('product_categories.authId', Auth::user()->id)
-                ->where('product_categories.uuid', $product->uuid)->first();
-            $productCategoryUpdate->orderBy = $product->id;
-            $productCategoryUpdate->save();
 
             $productCategory = productCategories::where('product_categories.authId', Auth::user()->id)
-                ->where('product_categories.uuid', $product->uuid)
-                ->leftjoin('product_categories_images', 'product_categories.imagesId', '=', 'product_categories_images.uuid')
-                ->select(
-                    'product_categories.uuid',
-                    'product_categories.name',
-                    'product_categories.slug',
-                    'product_categories.description',
-                    'product_categories.isActive',
-                    'product_categories.orderBy',
-                    'product_categories.seoData',
-                    'product_categories.deleted_at',
-                    'product_categories.created_at',
-                    'product_categories.updated_at',
-                    'product_categories_images.name as image_name',
-                    'product_categories_images.imageDescription as image_description',
-                    'product_categories_images.alt as image_alt'
-                )->first();
+                ->where('product_categories.uuid', $product->uuid)->where('deleted_at', '=', null)
+                ->with('category')
+                ->with('banner')->first();
             return response()->json([
                 'data' => $productCategory
             ]);
@@ -158,31 +149,20 @@ class ProductCategoriesController extends Controller
             ], 401);
         }
         try {
-            $productCategory = productCategory::where('product_categories.authId', '=', Auth::user()->id)
-                ->join('product_categories_images', 'product_categories.imagesId', '=', 'product_categories_images.uuid')
-
-                ->select(
-                    'product_categories.uuid',
-                    'product_categories.name',
-                    'product_categories.slug',
-                    'product_categories.description',
-                    'product_categories.isActive',
-                    'product_categories.seoData',
-                    'product_categories.orderBy',
-                    'product_categories.deleted_at',
-                    'product_categories.created_at',
-                    'product_categories.updated_at',
-                    'product_categories_images.name as _image_name',
-                    'product_categories_images.imageDescription as image_description',
-                    'product_categories_images.alt as image_alt'
-                )->where('product_categories.deleted_at', '=', null)->orderBy('orderBy', 'asc')->get();
+                  $productCategory = productCategories::where('product_categories.authId','=' ,Auth::user()->id)
+                  ->with('category')
+                  ->with('banner')
+                
+                  ->get();
+                
             return response()->json([
                 "data" => $productCategory
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+              $array = [ 'Something went wrong'];
+            return response(['error' => $array], 500);
         }
     }
 
@@ -222,31 +202,20 @@ class ProductCategoriesController extends Controller
             ], 401);
         }
         try {
+          
             $productCategoryExists = productCategories::where('product_categories.authId', Auth::user()->id)->where('uuid', $uuid)->exists();
+
             if ($productCategoryExists) {
-                $productCategory = productCategories::where('product_categories.authId', Auth::user()->id)->where('product_categories.uuid', $uuid)
-                    ->join('product_categories_images', 'product_categories.imagesId', '=', 'product_categories_images.uuid')
-                    ->select(
-                        'product_categories.uuid',
-                        'product_categories.name',
-                        'product_categories.slug',
-                        'product_categories.description',
-                        'product_categories.isActive',
-                        'product_categories.orderBy',
-                        'product_categories.seoData',
-                        'product_categories.deleted_at',
-                        'product_categories.created_at',
-                        'product_categories.updated_at',
-                        'product_categories_images.name as image_name',
-                        'product_categories_images.imageDescription as image_description',
-                        'product_categories_images.alt as image_alt'
-                    )->where('product_categories.deleted_at', '=', null)->first();
+                $productCategory = productCategories::where('product_categories.authId', Auth::user()->id)
+                ->where('product_categories.uuid', $uuid)->where('deleted_at', '=', null)
+                ->with('category')
+                  ->with('banner')->first();
                 return response()->json([
                     "data" => $productCategory
                 ]);
             } else {
-                 
-                $array = [ 'No Product Category Found'];
+                
+                 $array = [ 'No Product Category Found'];
                 return response([
                     'error'=>$array
                 ], 404);
@@ -254,7 +223,7 @@ class ProductCategoriesController extends Controller
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+             return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
@@ -298,7 +267,8 @@ class ProductCategoriesController extends Controller
         $validator = Validator::make($request->all(), [
             'name'              => ['required', Rule::unique('product_categories', 'name')->where('authId', $userId)],
             //  'slug'              => ['required', Rule::unique('product_categories', 'slug')->where('authId',$userId)],
-            'images'            => 'nullable',
+            'categoryImageId'            => 'nullable',
+            'bannerImageId'        => 'nullable',
             'description'           => 'nullable',
             'bannerImage'              => 'nullable',
             'bannerImageMobile'       => 'nullable',
@@ -325,30 +295,17 @@ class ProductCategoriesController extends Controller
                 }
 
                 $product =  $productCategory->update($input);
-                $productCategoryUpdated = productCategories::where('product_categories.authId', Auth::user()->id)
-                    ->where('product_categories.uuid', $productCategory->uuid)
-                    ->join('product_categories_images', 'product_categories.imagesId', '=', 'product_categories_images.uuid')
-                    ->select(
-                        'product_categories.uuid',
-                        'product_categories.name',
-                        'product_categories.slug',
-                        'product_categories.description',
-                        'product_categories.isActive',
-                        'product_categories.seoData',
-                        'product_categories.orderBy',
-                        'product_categories.deleted_at',
-                        'product_categories.created_at',
-                        'product_categories.updated_at',
-                        'product_categories_images.name as image_name',
-                        'product_categories_images.imageDescription as image_description',
-                        'product_categories_images.alt as image_alt'
-                    )->first();
+                 $productCategoryUpdated = productCategories::where('product_categories.authId', Auth::user()->id)
+                ->where('product_categories.uuid', $product->uuid)
+                ->where('deleted_at', '=', null)
+                ->with('category')
+                ->with('banner')->first();
                 return response()->json([
                     "data" => $productCategoryUpdated
                 ]);
             } else {
                  
-                $array = [ 'No Product Category Found'];
+                 $array = [ 'No Product Category Found'];
                 return response([
                     'error'=>$array
                 ], 404);
@@ -402,12 +359,12 @@ class ProductCategoriesController extends Controller
             $productCategoryDelete = productCategories::withTrashed()->select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
                 ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
-                 "data" => $productCategoryDelete
+               "data" => $productCategoryDelete
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+           return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
@@ -452,12 +409,12 @@ class ProductCategoriesController extends Controller
             $productCategory = productCategories::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
                 ->where('authId', Auth::user()->id)->onlyTrashed()->orderBy('deleted_at', 'desc')->paginate();
             return response()->json([
-                 "data" => $productCategory
+                "data" => $productCategory
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+           return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
@@ -545,14 +502,13 @@ class ProductCategoriesController extends Controller
         }
         try {
 
-            $productCategoryExists = productCategories::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
-                ->where('authId', Auth::user()->id)->exists();
+            $productCategoryExists = productCategories::where('authId', Auth::user()->id)->exists();
 
             if ($productCategoryExists) {
 
                 $column1Id = $request->input('column1Id');
                 $column2Id = $request->input('column2Id');
-
+  
                 $column1 = productCategories::where('uuid', $column1Id)->first();
                 $column2 = productCategories::where('uuid', $column2Id)->first();
 
