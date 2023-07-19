@@ -12,6 +12,8 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\productCategoriesImages;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Modules\Product\Entities\productCategoriesBannerImages;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -26,27 +28,27 @@ class ProductCategoriesImagesController extends Controller
     public function store(Request $request)
     {
 
-        $authToken = $request->header('Authtoken');
+           $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+     if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
-
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
+     $jwtToken = $request->bearerToken();
+     
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
         if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
@@ -54,27 +56,46 @@ class ProductCategoriesImagesController extends Controller
                 'error' =>  $errors,
             ], 401);
         }
-        // validation
-        $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpg,png,jpeg,gif,svg,webp|max:2048'
-        ]);
+            // validation
+            $validator = Validator::make($request->all(), [
+                'image' => 'required|image|mimes:jpg,png,jpeg,gif,svg,webp|max:2048'
+            ]);
 
 
-        if ($validator->fails()) {
-            $error = $validator->errors();
-            $errors = collect($error)->flatten();
+             if ($validator->fails()) {
+          $error = $validator->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 400);
         }
-        try {
+            try {
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
-                $imageName = $image->getClientOriginalName();
+                 $extension = $image->getClientOriginalExtension();
+                 $imageName =$request->name. Str::random(6). '.'.$extension;
+                 $imageNameExists= $request->name. '.'.$extension;
+                $exists = productCategoriesImages::where('authId',auth()->id())->where('name','=',$request->name)->exists();
+                
+                $imageFullPath = 'imageUploads/' . $imageName;
+
+                $imagepath=$image->storeAs('imageUploads/',$imageName);
+                if($exists){
+                     $name = $request->name;
+                    $processedName = Str::replace(' ', '_', $name);
+                  $imageName =$processedName. Str::random(6). '.'.$extension;
 
                 $imageFullPath = 'imageUploads/' . $imageName;
 
-                $imagepath = $image->move(public_path('imageUploads'), $imageFullPath);
+                $imagepath=$image->storeAs('imageUploads/',$imageName);
+                }else{
+                    $name = $request->name;
+                    $processedName = Str::replace(' ', '_', $name);
+                    $imageName= $processedName. '.'.$extension;
+                    $imageFullPath = 'imageUploads/' . $imageName;
+
+                    $imagepath=$image->storeAs('imageUploads/',$imageName);
+                }
             }
             $productCategoryImages = new productCategoriesImages();
             // $productCategoryImages->name = $imageName;
@@ -102,27 +123,27 @@ class ProductCategoriesImagesController extends Controller
      */
     public function showAll(Request $request)
     {
-        $authToken = $request->header('Authtoken');
+     $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+     if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
+     $jwtToken = $request->bearerToken();
 
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
         if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
@@ -158,27 +179,27 @@ class ProductCategoriesImagesController extends Controller
      */
     public function show(Request $request, $uuid)
     {
-        $authToken = $request->header('Authtoken');
+            $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+      if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
+     $jwtToken = $request->bearerToken();
 
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
         if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
@@ -202,11 +223,11 @@ class ProductCategoriesImagesController extends Controller
                         'updated_at'
                     )->first();
                 return response()->json([
-                    "data" => $productCategory
+                   "data" => $productCategory
                 ]);
             } else {
-                  
-                $array = [ 'No Product Category Images Found'];
+               
+                $array = [ 'No Product Category Image Found'];
                 return response([
                     'error'=>$array
                 ], 404);
@@ -226,28 +247,28 @@ class ProductCategoriesImagesController extends Controller
      */
     public function update(Request $request)
     {
-        $authToken = $request->header('Authtoken');
+    $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+     if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
+     $jwtToken = $request->bearerToken();
 
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
-        if ($validatorAccess->fails()) {
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
+       if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([
@@ -261,8 +282,8 @@ class ProductCategoriesImagesController extends Controller
 
 
         if ($validator->fails()) {
-            $error = $validator->errors();
-            $errors = collect($error)->flatten();
+          $error = $validator->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 400);
@@ -275,15 +296,34 @@ class ProductCategoriesImagesController extends Controller
                 $productName = $productCategory->name;
                 $productPath = $productCategory->path;
                 if ($request->hasFile('image')) {
-                    $image = $request->file('image');
-                    $imageName = $image->getClientOriginalName();
-                    $imageFullPath = 'imageUploads/' . $imageName;
+                     if (File::exists($productPath)) {
+                        File::delete($productPath);
+                    }
+                   $image = $request->file('image');
+                   $extension = $image->getClientOriginalExtension();
+                 $imageName =$request->name. Str::random(6). '.'.$extension;
 
-                    $imagepath = $image->move(public_path('imageUploads'), $imageFullPath);
+                $imageFullPath = 'imageUploads/' . $imageName;
+
+                $imagepath=$image->storeAs('imageUploads/',$imageName);
+                  
                     $productPath = $imageFullPath;
                 }
                 $input['name'] = $productName;
-                $input['path'] = $productPath;
+             
+              
+               if($request->imageName)
+                {
+                     $imageName =$request->name. Str::random(6). '.'.$extension;
+                    $oldPath ='/home/swadeshdigital/ecommerce_swadeshdigital_com/storage/app/' . $productPath;
+                    $newPath = '/home/swadeshdigital/ecommerce_swadeshdigital_com/storage/app/imageUploads/' . $imageName;
+                  
+                    $nPath = 'imageUploads/' . $imageName;
+                    File::move($oldPath,$newPath);
+                   
+                }
+                $input['path'] = $nPath;
+                
 
                 $product =  $productCategory->update($input);
                 $productCategoryUpdate = productCategoriesImages::select(
@@ -298,7 +338,7 @@ class ProductCategoriesImagesController extends Controller
                 )
                     ->where('authId', Auth::user()->id)->where('uuid',  $productCategory->uuid)->first();
                 return response()->json([
-                    "data" => $productCategoryUpdate
+                   "data" => $productCategoryUpdate
                 ]);
             } else {
                    
@@ -321,27 +361,27 @@ class ProductCategoriesImagesController extends Controller
      */
     public function destroy(Request $request, $uuid)
     {
-        $authToken = $request->header('Authtoken');
+            $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+     if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
+     $jwtToken = $request->bearerToken();
 
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
         if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
@@ -383,27 +423,27 @@ class ProductCategoriesImagesController extends Controller
      */
     public function trashed(Request $request)
     {
-        $authToken = $request->header('Authtoken');
+             $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+      if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
+     $jwtToken = $request->bearerToken();
 
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
         if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
@@ -441,28 +481,28 @@ class ProductCategoriesImagesController extends Controller
      */
     public function restore(Request $request, $uuid)
     {
-        $authToken = $request->header('Authtoken');
+            $authToken = $request->header('Authtoken');
 
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
+    $validatorAuth = Validator::make(
+        ['Authtoken' => $authToken],
+        ['Authtoken' => ['required',Rule::exists('users','authToken')]]
+    );
 
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
+      if ($validatorAuth->fails()) {
+          $error = $validatorAuth->errors();
+          $errors=collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->bearerToken();
+      $jwtToken = $request->bearerToken();
 
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
-        if ($validatorAccess->fails()) {
+    $validatorAccess = Validator::make(
+        ['Authorization' => $jwtToken],
+        ['Authorization' => ['required',Rule::exists('users','access_token')]]
+    );
+         if ($validatorAccess->fails()) {
             $error = $validatorAccess->errors();
             $errors = collect($error)->flatten();
             return response()->json([

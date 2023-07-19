@@ -520,9 +520,79 @@ class ProductCategoriesController extends Controller
 
                 $column1->save();
                 $column2->save();
+                return response(['data' => ['message'=>'Order has been swapped']],200);
+            }
+        } catch (ValidationException $e) {
+            return response()->json(['error' => $e->errors()], 422);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Something went wrong'], 500);
+        }
+    }
+    public function active(Request $request,$uuid){
+        $authToken = $request->header('Authtoken');
+
+        $validatorAuth = Validator::make(
+            ['Authtoken' => $authToken],
+            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
+        );
+
+        if ($validatorAuth->fails()) {
+            $error = $validatorAuth->errors();
+            $errors = collect($error)->flatten();
+            return response()->json([
+                'status' => '400', 'error' =>  $errors,
+            ], 401);
+        }
+
+        $jwtToken = $request->bearerToken();
+
+        $validatorAccess = Validator::make(
+            ['Authorization' => $jwtToken],
+            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
+        );
+        if ($validatorAccess->fails()) {
+            $error = $validatorAccess->errors();
+            $errors = collect($error)->flatten();
+            return response()->json([
+                'error' =>  $errors,
+            ], 400);
+        }
+        try {
+
+            $productCategoryExists = productCategories::where('authId', Auth::user()->id)->exists();
+
+            if ($productCategoryExists) {
+            $productCategories = productCategories::where('authId', Auth::user()->id)
+            ->where('uuid',$uuid)
+            ->first();
+            
+         
+              if($productCategories->isActive == true)
+              {
+                  
+                $productCategories->isActive = 0;
+                $productCategories->save();
+               
+              
+              }else{
+                $productCategories->isActive = 1;
+                $productCategories->save();
+              }
+              $productCategory = productCategories::where('authId', Auth::user()->id)
+              ->where('uuid',$uuid)
+              ->where('product_categories.uuid', $uuid)->where('deleted_at', '=', null)
+              ->with('category')
+                ->with('banner')->first();
+
                 return response()->json([
-                    'message' => "Product Category Order Swapped"
+                    "data" => $productCategory
                 ]);
+            } else {
+                
+                 $array = [ 'No Product Category Found'];
+                return response([
+                    'error'=>$array
+                ], 404);
             }
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
