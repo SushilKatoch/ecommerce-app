@@ -1,4 +1,5 @@
 {
     "Product": true,
-    "Category": true
+    "Category": true,
+    "Warehouse": true
 }

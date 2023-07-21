@@ -1,0 +1,23 @@
+{
+    "name": "skatoch/warehouse",
+    "description": "",
+    "authors": [
+        {
+            "name": "skatoch",
+            "email": "skxavier196@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Warehouse\\": ""
+        }
+    }
+}
