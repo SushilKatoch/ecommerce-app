@@ -103,7 +103,7 @@ class ProductController extends Controller
 
             $productOrder = Product::where('authId', auth()->id())->count();
             $input['slug'] = Str::slug($request->name);
-            $input['storeUuid'] = Str::uuid()->getHex();
+            $input['uuid'] = Str::uuid()->getHex();
             $input['authId'] = Auth::user()->id;
             $input['orderBy'] = ++$productOrder;
 

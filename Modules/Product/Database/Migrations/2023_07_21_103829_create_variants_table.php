@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('imagesId')->nullable();
             $table->unsignedBigInteger('weight')->nullable();
             $table->string('weightUnit')->nullable();
-            $table->boolean('inStock')->default('true');
+            $table->boolean('inStock')->default(0);
             $table->string('seoData')->nullable();
             $table->softDeletes();
             $table->timestamps();

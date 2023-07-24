@@ -35,9 +35,9 @@ return new class extends Migration
             $table->string('shipmentWeight')->nullable();
             $table->string('hsnCode')->nullable();
             $table->string('gstRate')->nullable();
-            $table->boolean('inStock')->default('true');
-            $table->boolean('isActive')->default('true');
-            $table->boolean('isTaxable')->default('false');
+            $table->boolean('inStock')->default(0);
+            $table->boolean('isActive')->default(0);
+            $table->boolean('isTaxable')->default(1);
             $table->string('variantId')->nullable();
             $table->string('orderBy')->nullable();
             $table->string('tags')->nullable();
