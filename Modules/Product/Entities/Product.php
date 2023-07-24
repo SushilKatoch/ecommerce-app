@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Warehouse\Entities;
+namespace Modules\Product\Entities;
 
 use App\Models\BaseModel;
 use Carbon\Carbon;
@@ -9,23 +9,25 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Warehouse extends BaseModel
+class Product extends BaseModel
 {
     use LogsActivity;
     use SoftDeletes;
 
-    protected $table = 'warehouse';
+    protected $table = 'products';
 
     protected $dates = [
         'deleted_at',
     ];
     protected $casts = [
-        'regionDelivery' => 'array',
+        'attributes' => 'array',
         'isActive' => 'boolean',
+        'inStock' => 'boolean',
+        'isTaxable' => 'boolean',
     ]; 
     
     protected $hidden = [
-      'seoData'
+        'seoData'
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -39,12 +41,6 @@ class Warehouse extends BaseModel
 
    
 
-    /**
-     * Set the published at
-     * If no value submitted use the 'Title'.
-     *
-     * @param [type]
-     */
    
     public function setSlugAttribute($value)
     {
@@ -55,16 +51,10 @@ class Warehouse extends BaseModel
         }
     }
    
-   
-    
-    
-     public function product(): HasOne
+    public function category(): HasOne
     {
-        return $this->hasOne('Modules\Product\Entities\Product','uuid','categoryImageId')
+        return $this->hasOne('Modules\Product\Entities\productCategories','productCategoryId','uuid')
           ->select('uuid','name','path','imageDescription','alt');
     }
-
-
-
     
 }

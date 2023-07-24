@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('authId')->nullable();
             $table->string('productSkuCode')->nullable();
             $table->string('productName')->nullable();
+            $table->string('slug')->nullable();
             $table->string('productCategory')->nullable();
             $table->string('productCondition')->nullable();
             $table->text('productDescription')->nullable();
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->string('productBrand')->nullable();
             $table->string('productAttributes')->nullable();
             $table->string('imagesId')->nullable();
+            $table->string('productCategoryId')->nullable();
             $table->string('productUnit')->nullable();
             $table->unsignedBigInteger('productQuantity')->nullable();
             $table->string('unit')->nullable();
@@ -34,9 +36,10 @@ return new class extends Migration
             $table->string('hsnCode')->nullable();
             $table->string('gstRate')->nullable();
             $table->boolean('inStock')->default('true');
-            $table->boolean('inActive')->default('true');
-            $table->boolean('inTaxable')->default('false');
+            $table->boolean('isActive')->default('true');
+            $table->boolean('isTaxable')->default('false');
             $table->string('variantId')->nullable();
+            $table->string('orderBy')->nullable();
             $table->string('tags')->nullable();
             $table->string('storeUuid')->nullable();
             $table->string('countryOfOrigin')->nullable();

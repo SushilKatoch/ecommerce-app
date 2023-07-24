@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Modules\Product\Http\Controllers\ProductCategoriesController;
 use Modules\Product\Http\Controllers\ProductCategoriesImagesController;
 use Modules\Product\Http\Controllers\ProductCategoriesBannerImagesController;
+use Modules\Product\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,4 +49,14 @@ Route::group(['namespace' => '\Modules\Product\Http\Controllers', 'as' => 'api',
      Route::get("productCategoryBannerImages/trashed", [ProductCategoriesBannerImagesController::class,'trashed']);
      Route::patch("productCategoryBannerImages/trashed/{uuid}", [ProductCategoriesBannerImagesController::class,'restore']);
 
+    // Products
+    Route::post("product/store", [ProductController::class,'store']);
+    Route::get("product/showAll", [ProductController::class,'showAll']);
+    Route::get("product/show/{uuid}", [ProductController::class,'show']);
+    Route::post("product/update", [ProductController::class,'update']);
+    Route::delete("product/destroy/{uuid}", [ProductController::class,'destroy']);
+    Route::get("product/trashed", [ProductController::class,'trashed']);
+    Route::patch("product/trashed/{uuid}", [ProductController::class,'restore']);
+    Route::post("product/swapOrder", [ProductController::class,'swapProductOrder']);
+    Route::get("product/status/{id}", [ProductController::class,'active']);
 });
