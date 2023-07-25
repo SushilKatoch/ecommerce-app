@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('variants', function (Blueprint $table) {
             $table->id();
             $table->string('uuid')->nullable();
-            $table->string('authId')->nullable();
+            $table->unsignedBigInteger('authId')->nullable();
             $table->string('skuCode')->nullable();
-            $table->string('attributes')->nullable();
+            $table->string('masterAttribute')->nullable();
+            $table->string('attributeName')->nullable();
             $table->string('dimensions')->nullable();
             $table->unsignedBigInteger('inventory')->nullable();
             $table->float('productPrice')->nullable();

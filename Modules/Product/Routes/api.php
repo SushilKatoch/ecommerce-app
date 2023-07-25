@@ -5,6 +5,7 @@ use Modules\Product\Http\Controllers\ProductCategoriesController;
 use Modules\Product\Http\Controllers\ProductCategoriesImagesController;
 use Modules\Product\Http\Controllers\ProductCategoriesBannerImagesController;
 use Modules\Product\Http\Controllers\ProductController;
+use Modules\Product\Http\Controllers\VariantsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,4 +60,13 @@ Route::group(['namespace' => '\Modules\Product\Http\Controllers', 'as' => 'api',
     Route::patch("product/trashed/{uuid}", [ProductController::class,'restore']);
     Route::post("product/swapOrder", [ProductController::class,'swapProductOrder']);
     Route::get("product/status/{id}", [ProductController::class,'active']);
+
+    // Variants
+    Route::post("variant/store", [VariantsController::class,'store']);
+    Route::get("variant/showAll", [VariantsController::class,'showAll']);
+    Route::get("variant/show/{id}", [VariantsController::class,'show']);
+    Route::post("variant/update", [VariantsController::class,'update']);
+    Route::delete("variant/delete/{id}", [VariantsController::class,'destroy']);
+    Route::get("variant/trashed", [VariantsController::class,'trashed']);
+    Route::patch("variant/restore/{id}", [VariantsController::class,'restore']);
 });

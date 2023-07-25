@@ -1,34 +1,31 @@
 <?php
 
-namespace Modules\Product\Entities;
+namespace Modules\Warehouse\Entities;
 
 use App\Models\BaseModel;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Product extends BaseModel
+class Inventory extends BaseModel
 {
     use LogsActivity;
     use SoftDeletes;
 
-    protected $table = 'products';
+    protected $table = 'inventory';
 
     protected $dates = [
         'deleted_at',
     ];
     protected $casts = [
-        'attributes' => 'array',
+        'regionDelivery' => 'array',
         'isActive' => 'boolean',
-        'inStock' => 'boolean',
-        'isTaxable' => 'boolean',
     ]; 
     
     protected $hidden = [
-        'seoData'
+      'seoData'
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -40,8 +37,13 @@ class Product extends BaseModel
             ->useLogName($this->table);
     }
 
-   
 
+    /**
+     * Set the published at
+     * If no value submitted use the 'Title'.
+     *
+     * @param [type]
+     */
    
     public function setSlugAttribute($value)
     {
@@ -52,10 +54,6 @@ class Product extends BaseModel
         }
     }
    
-       public function category():HasMany
-    {
-        return $this->hasMany('Modules\Product\Entities\Variant','uuid','productId')
-                    ->select('masterAttribute','attributeName','uuid');
-    }
+
     
 }

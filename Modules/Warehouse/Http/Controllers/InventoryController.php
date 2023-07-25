@@ -1,22 +1,22 @@
 <?php
 
-namespace Modules\Product\Http\Controllers;
+namespace Modules\Warehouse\Http\Controllers;
 
-
-use Illuminate\Support\Facades\Validator;
-use Exception;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Exception;
 use Illuminate\Validation\ValidationException;
-use Modules\Product\Entities\Product;
+use Illuminate\Support\Facades\DB;
+use Modules\Warehouse\Entities\Inventory;
 
-class ProductController extends Controller
+class InventoryController extends Controller
 {
+
     /**
      * Store a newly created resource in storage.
      * @param Request $request
@@ -24,7 +24,6 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-
         $authToken = $request->header('Authtoken');
 
         $validatorAuth = Validator::make(
@@ -60,30 +59,11 @@ class ProductController extends Controller
         $userId = auth()->id();
         // validation
         $validator = Validator::make($request->all(), [
-            'productName'               => ['required', Rule::unique('products', 'name')->where('authId', $userId)],
-            'productSkuCode'            => 'nullable',
-            'productCondition'          => 'required',
-            'productDescription'        => 'nullable',
-            'productPrice'              => 'nullable',
-            'productSellingPrice'       => 'nullable',
-            'productBrand'              => 'nullable',
-            'productAttributes'         => 'nullable',
-            'productPrice'              => 'nullable',
-            'imagesId'                  => 'nullable',
-            'productCategoryId'         => 'nullable',
-            'productUnit'               => 'required',
-            'unit'                      => 'required',
-            'productQuantity'           => 'nullable',
-            'productWeight'             => 'nullable',
-            'weightUnit'                => 'nullable',
-            'hsnCode'                   => 'nullable',
-            'gstRate'                   => 'nullable',
-            'variantId'                 => 'nullable',
-            'tags'                      => 'nullable',
-            'storeUuid'                 => 'nullable',
-            'countryOfOrigin'           => 'nullable',
-            'manufacturingAddress'      => 'nullable',
-            'seoData'                   => 'nullable',
+            'warehouse'        => 'nullable',
+            'productId'        => 'nullable',
+            'quantity'         => 'nullable',
+            'orderBy'          => 'nullable|numeric',
+       
         ]);
         if ($validator->fails()) {
             $error = $validator->errors();
@@ -95,32 +75,37 @@ class ProductController extends Controller
         try {
             $input = $request->all();
 
-            $productOrder = Product::where('authId', auth()->id())->count();
-            $input['slug'] = Str::slug($request->name);
+            $inventory = Inventory::where('authId', auth()->id())->count();
             $input['uuid'] = Str::uuid()->getHex();
             $input['authId'] = Auth::user()->id;
-            $input['orderBy'] = ++$productOrder;
+            $input['orderBy'] = ++$inventory;
 
-            if ($request->ImageId == null) {
-                $input['categoryImageId'] = '6fe520f76a014a3a9f9671be8a766012';
-            }
 
-            $product = Product::create($input);
+            $inventory = Inventory::create($input);
 
-            $productCategory = Product::where('authId', Auth::user()->id)
-                ->where('uuid', $product->uuid)->where('deleted_at', '=', null)
-               
+            $warehouseData = Inventory::where('authId', Auth::user()->id)
+                ->where('uuid', $inventory->uuid)->where('deleted_at', '=', null)
+                ->select(
+                    'uuid',
+                    'productId',
+                    'warehouseId',
+                    'quantity',
+                    'orderBy',
+                    'deleted_at',
+                    'created_at',
+                    'updated_at'
+                )
                 ->first();
             return response()->json([
-                'data' => $productCategory
+                'data' => $warehouseData
             ]);
         } catch (ValidationException $e) {
             throw new \Exception('Validation failed: ' . $e->getMessage(), 422);
         }
     }
+
     /**
-     * Show the specified resource.
-     * @param int $id
+     * Show all the specified resource.
      * @return Renderable
      */
     public function showAll(Request $request)
@@ -154,13 +139,22 @@ class ProductController extends Controller
             ], 401);
         }
         try {
-            $product = Product::where('authId', '=', Auth::user()->id)
-               
+            $warehouse = Inventory::where('authId', '=', Auth::user()->id)
+            ->select(
+                'uuid',
+                'productId',
+                'warehouseId',
+                'quantity',
+                'orderBy',
+                'deleted_at',
+                'created_at',
+                'updated_at'
+            )
 
                 ->get();
 
             return response()->json([
-                "data" => $product
+                "data" => $warehouse
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -170,7 +164,7 @@ class ProductController extends Controller
         }
     }
 
-    /**
+     /**
      * Show the form for editing the specified resource.
      * @param int $id
      * @return Renderable
@@ -206,31 +200,41 @@ class ProductController extends Controller
             ], 401);
         }
         try {
+          
+            $warehouseExists = Inventory::where('authId', Auth::user()->id)->where('uuid', $uuid)->exists();
 
-            $productExists = Product::where('authId', Auth::user()->id)->where('uuid', $uuid)->exists();
-
-            if ($productExists) {
-                $product = Product::where('authId', Auth::user()->id)
-                    ->where('uuid', $uuid)->where('deleted_at', '=', null)
-                    ->first();
+            if ($warehouseExists) {
+                $warehouse = Inventory::where('authId', Auth::user()->id)
+                ->where('uuid', $uuid)->where('deleted_at', '=', null)
+                ->select(
+                    'uuid',
+                    'productId',
+                    'warehouseId',
+                    'quantity',
+                    'orderBy',
+                    'deleted_at',
+                    'created_at',
+                    'updated_at'
+                )
+                  ->first();
                 return response()->json([
-                    "data" => $product
+                    "data" => $warehouse
                 ]);
             } else {
-
-                $array = ['No Product Found'];
+                
+                 $array = [ 'No Inventory Data Found'];
                 return response([
-                    'error' => $array
+                    'error'=>$array
                 ], 404);
             }
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+             return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
-    /**
+     /**
      * Update the specified resource in storage.
      * @param Request $request
      * @param int $id
@@ -268,36 +272,22 @@ class ProductController extends Controller
         $userId = auth()->id();
         // validation
         $validator = Validator::make($request->all(), [
-            'productName'              => ['required', Rule::unique('products', 'name')->where('authId', $userId)],
-            // 'slug'              => 'nullable|max:191|unique:product_categories',
-            'productSkuCode'            => 'nullable',
-            'productCategory'           => 'nullable',
-            'productCondition'          => 'nullable',
-            'productDescription'        => 'nullable',
-            'productPrice'              => 'nullable',
-            'productSellingPrice'       => 'nullable',
-            'productBrand'              => 'nullable',
-            'productAttributes'         => 'nullable',
-            'productPrice'              => 'nullable',
-            'imagesId'                  => 'nullable',
-            'productCategoryId'         => 'nullable',
-            'productUnit'               => 'nullable',
-            'unit'                      => 'nullable',
-            'productQuantity'           => 'nullable',
-            'productWeight'             => 'nullable',
-            'weightUnit'                => 'nullable',
-            'shipmentWeight'            => 'nullable',
-            'hsnCode'                   => 'nullable',
-            'gstRate'                   => 'nullable',
-            'inStock'                   => 'nullable',
-            'isActive'                  => 'nullable|max:50',
-            'isTaxable'                 => 'nullable',
-            'variantId'                 => 'nullable',
-            'tags'                      => 'nullable',
-            'storeUuid'                 => 'nullable|numeric',
-            'countryOfOrigin'           => 'nullable',
-            'manufacturingAddress'      => 'nullable',
-            'seoData'                   => 'nullable',
+          'name'                => ['nullable', Rule::unique('warehouse', 'name')->where('authId', $userId)],
+            'addressLine1'        => 'nullable',
+            'addressLine2'        => 'nullable',
+            'city'                => 'nullable',
+            'contactPersonName'   => 'nullable',
+            'gstNumber'           => 'nullable',
+            'fssaiNumber'         => 'nullable',
+            'isActive'            => 'nullable|max:50',
+            'isPrimaryWarehouse'  => 'nullable|max:191',
+            'mobileNumber'        => 'nullable|numeric|min:10|max:14',
+            'state'               => 'nullable|max:60',
+            'country'             => 'nullable|max:80',
+            'pincode'             => 'nullable|max:8',
+            'regionDelivery'      => 'nullable',
+            'orderBy'             => 'nullable|numeric',
+            'seoData'             => 'nullable',
         ]);
         if ($validator->fails()) {
             $error = $validatorAuth->errors();
@@ -307,28 +297,35 @@ class ProductController extends Controller
             ], 400);
         }
         try {
-            $productExists = Product::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->exists();
-            if ($productExists) {
+           
+            $warehouseExists = Inventory::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->exists();
+            if ($warehouseExists) {
                 $input = $request->all();
-                $product = Product::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->first();
-                if ($request->name) {
-                    $input['slug'] = Str::slug($request->name);
-                }
-
-                $product =  $product->update($input);
-                $productUpdated = Product::where('authId', Auth::user()->id)
-                    ->where('uuid', $product->uuid)
-                    ->where('deleted_at', '=', null)
-                    ->with('')
-                    ->with('banner')->first();
+                $warehouse = Inventory::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->first();
+              
+                $warehouseData =  $warehouse->update($input);
+                 $warehouseUpdated = Inventory::where('authId', Auth::user()->id)
+                ->where('uuid', $request->uuid)
+                ->where('deleted_at', '=', null)
+                ->select(
+                    'uuid',
+                    'productId',
+                    'warehouseId',
+                    'quantity',
+                    'orderBy',
+                    'deleted_at',
+                    'created_at',
+                    'updated_at'
+                )
+               ->first();
                 return response()->json([
-                    "data" => $productUpdated
+                    "data" => $warehouseUpdated
                 ]);
             } else {
-
-                $array = ['No Product Found'];
+                 
+                 $array = [ 'No Product Category Found'];
                 return response([
-                    'error' => $array
+                    'error'=>$array
                 ], 404);
             }
         } catch (ValidationException $e) {
@@ -337,6 +334,7 @@ class ProductController extends Controller
             return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -374,18 +372,28 @@ class ProductController extends Controller
             ], 401);
         }
         try {
-            $product = Product::where('authId', Auth::user()->id)->where('uuid', '=', $uuid);
+            $warehouse = Inventory::where('authId', Auth::user()->id)->where('uuid', '=', $uuid);
 
-            $product = $product->delete();
-            $productDelete = Product::withTrashed()->select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
+            $warehouseData = $warehouse->delete();
+            $warehouseDelete = Inventory::withTrashed()
+            ->select(
+                'uuid',
+                'productId',
+                'warehouseId',
+                'quantity',
+                'orderBy',
+                'deleted_at',
+                'created_at',
+                'updated_at'
+            )
                 ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
-                "data" => $productDelete
+               "data" => $warehouseDelete
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+           return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
@@ -427,15 +435,26 @@ class ProductController extends Controller
         }
         try {
 
-            $product = Product::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
+            $warehouse = Inventory::select(
+               
+                    'uuid',
+                    'productId',
+                    'warehouseId',
+                    'quantity',
+                    'orderBy',
+                    'deleted_at',
+                    'created_at',
+                    'updated_at'
+                
+            )
                 ->where('authId', Auth::user()->id)->onlyTrashed()->orderBy('deleted_at', 'desc')->paginate();
             return response()->json([
-                "data" => $product
+                "data" => $warehouse
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
+           return response()->json(['error' => 'Something went wrong'], 500);
         }
     }
 
@@ -477,143 +496,22 @@ class ProductController extends Controller
             ], 401);
         }
         try {
-            $product = Product::withTrashed()->where('uuid', '=', $request->uuid);
-            $product->restore();
-            $productRestore = Product::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
+            $warehouse = Inventory::withTrashed()->where('uuid', '=', $request->uuid);
+            $warehouse->restore();
+            $warehouseRestore = Inventory::select(
+                'uuid',
+                'productId',
+                'warehouseId',
+                'quantity',
+                'orderBy',
+                'deleted_at',
+                'created_at',
+                'updated_at'
+            )
                 ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
-                "data" => $productRestore
+                "data" => $warehouseRestore
             ]);
-        } catch (ValidationException $e) {
-            return response()->json(['error' => $e->errors()], 422);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
-        }
-    }
-
-    public function swapProductOrder(Request $request)
-    {
-        $authToken = $request->header('Authtoken');
-
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
-
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
-            return response()->json([
-                'status' => '400', 'error' =>  $errors,
-            ], 401);
-        }
-
-        $jwtToken = $request->bearerToken();
-
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
-        if ($validatorAccess->fails()) {
-            $error = $validatorAccess->errors();
-            $errors = collect($error)->flatten();
-            return response()->json([
-                'error' =>  $errors,
-            ], 400);
-        }
-        try {
-
-            $productExists = Product::where('authId', Auth::user()->id)->exists();
-
-            if ($productExists) {
-
-                $column1Id = $request->input('column1Id');
-                $column2Id = $request->input('column2Id');
-  
-                $column1 = Product::where('uuid', $column1Id)->first();
-                $column2 = Product::where('uuid', $column2Id)->first();
-
-                $column1Order = $column1->orderBy;
-                $column2Order = $column2->orderBy;
-
-                $column1->orderBy = $column2Order;
-                $column2->orderBy = $column1Order;
-
-                $column1->save();
-                $column2->save();
-                return response(['data' => ['message'=>'Order has been swapped']],200);
-            }
-        } catch (ValidationException $e) {
-            return response()->json(['error' => $e->errors()], 422);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Something went wrong'], 500);
-        }
-    }
-
-    public function active(Request $request, $uuid)
-    {
-        $authToken = $request->header('Authtoken');
-
-        $validatorAuth = Validator::make(
-            ['Authtoken' => $authToken],
-            ['Authtoken' => ['required', Rule::exists('users', 'authToken')]]
-        );
-
-        if ($validatorAuth->fails()) {
-            $error = $validatorAuth->errors();
-            $errors = collect($error)->flatten();
-            return response()->json([
-                'status' => '400', 'error' =>  $errors,
-            ], 401);
-        }
-
-        $jwtToken = $request->bearerToken();
-
-        $validatorAccess = Validator::make(
-            ['Authorization' => $jwtToken],
-            ['Authorization' => ['required', Rule::exists('users', 'access_token')]]
-        );
-        if ($validatorAccess->fails()) {
-            $error = $validatorAccess->errors();
-            $errors = collect($error)->flatten();
-            return response()->json([
-                'error' =>  $errors,
-            ], 400);
-        }
-        try {
-
-            $productExists = Product::where('authId', Auth::user()->id)->exists();
-
-            if ($productExists) {
-                $product = Product::where('authId', Auth::user()->id)
-                    ->where('uuid', $uuid)
-                    ->first();
-
-
-                if ($product->isActive == true) {
-
-                    $product->isActive = 0;
-                    $product->save();
-                } else {
-                    $product->isActive = 1;
-                    $product->save();
-                }
-                $products = Product::where('authId', Auth::user()->id)
-                    ->where('uuid', $uuid)
-                    ->where('uuid', $uuid)->where('deleted_at', '=', null)
-                  
-                    ->first();
-
-                return response()->json([
-                    "data" => $products
-                ]);
-            } else {
-
-                $array = ['No Product Found'];
-                return response([
-                    'error' => $array
-                ], 404);
-            }
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
         } catch (Exception $e) {

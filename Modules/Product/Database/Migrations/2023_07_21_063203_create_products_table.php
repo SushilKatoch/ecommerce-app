@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('uuid')->nullable();
-            $table->string('authId')->nullable();
+            $table->unsignedBigInteger('authId')->nullable();
             $table->string('productSkuCode')->nullable();
             $table->string('productName')->nullable();
             $table->string('slug')->nullable();
