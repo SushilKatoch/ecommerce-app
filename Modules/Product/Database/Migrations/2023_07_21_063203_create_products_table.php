@@ -29,8 +29,10 @@ return new class extends Migration
             $table->string('productCategoryId')->nullable();
             $table->string('productUnit')->nullable();
             $table->unsignedBigInteger('productQuantity')->nullable();
+            $table->unsignedBigInteger('unitId')->nullable();
             $table->string('unit')->nullable();
-            $table->unsignedBigInteger('productWeight')->nullable();
+            $table->string('productWeight',120)->nullable();
+            $table->string('weightUnitId',120)->nullable();
             $table->string('weightUnit')->nullable();
             $table->string('shipmentWeight')->nullable();
             $table->string('hsnCode')->nullable();

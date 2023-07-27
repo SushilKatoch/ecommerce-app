@@ -24,6 +24,8 @@ return new class extends Migration
             $table->boolean('isActive')->default(true);
             $table->boolean('isPrimaryWarehouse')->nullable();
             $table->string('mobileNumber')->nullable();
+            $table->unsignedBigInteger('skuId')->nullable();
+            $table->unsignedBigInteger('quantityAvailable')->nullable();
             $table->string('name')->nullable();
             $table->string('pincode')->nullable();
             $table->string('state')->nullable();

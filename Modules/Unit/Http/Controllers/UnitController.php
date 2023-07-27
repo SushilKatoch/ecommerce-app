@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Warehouse\Http\Controllers;
+namespace Modules\Unit\Http\Controllers;
 
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Facades\Validator;
@@ -12,9 +12,9 @@ use Illuminate\Support\Str;
 use Exception;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
-use Modules\Warehouse\Entities\Warehouse;
+use Modules\Unit\Entities\Unit;
 
-class WarehouseController extends Controller
+class UnitController extends Controller
 {
 
     /**
@@ -59,22 +59,7 @@ class WarehouseController extends Controller
         $userId = auth()->id();
         // validation
         $validator = Validator::make($request->all(), [
-            'name'                => ['required', Rule::unique('warehouse', 'name')->where('authId', $userId)],
-            'addressLine1'        => 'required',
-            'addressLine2'        => 'required',
-            'city'                => 'required',
-            'contactPersonName'   => 'required',
-            'gstNumber'           => 'nullable',
-            'fssaiNumber'         => 'nullable',
-            'isActive'            => 'nullable|max:50',
-            'isPrimaryWarehouse'  => 'nullable|max:191',
-            'mobileNumber'        => 'required',
-            'state'               => 'required|max:60',
-            'country'             => 'required|max:80',
-            'pincode'             => 'required|max:8',
-            'regionDelivery'      => 'nullable',
-            'orderBy'             => 'nullable|numeric',
-            'seoData'             => 'nullable',
+            'unitName'         => ['required', Rule::unique('units', 'unitName')->where('authId', $userId)],
         ]);
         if ($validator->fails()) {
             $error = $validator->errors();
@@ -84,45 +69,25 @@ class WarehouseController extends Controller
             ], 400);
         }
         try {
-
-            $gst = Warehouse::where('authId',auth()->id())->get()->pluck('country');
-            collect($gst)->unique();
-            $input = $request->all();
-
-            $warehouse = Warehouse::where('authId', auth()->id())->count();
-            // $input['slug'] = Str::slug($request->name);
+       
+            $unit = Unit::where('authId', auth()->id())->count();
             $input['uuid'] = Str::uuid()->getHex();
             $input['authId'] = Auth::user()->id;
-            $input['orderBy'] = ++$warehouse;
 
+            $unit = Unit::create($input);
 
-            $warehouse = Warehouse::create($input);
-
-            $warehouseData = Warehouse::where('authId', Auth::user()->id)
-                ->where('uuid', $warehouse->uuid)->where('deleted_at', '=', null)
+            $unitData = Unit::where('authId', Auth::user()->id)
+                ->where('uuid', $unit->uuid)->where('deleted_at', '=', null)
                 ->select(
                     'uuid',
-                    'name',
-                    'addressLine1',
-                    'addressLine2',
-                    'city',
-                    'contactPersonName',
-                    'gstNumber',
-                    'isActive',
-                    'isPrimaryWarehouse',
-                    'mobileNumber',
-                    'state',
-                    'country',
-                    'pincode',
-                    'regionDelivery',
-                    'orderBy',
+                    'unitName',
                     'deleted_at',
                     'created_at',
                     'updated_at'
                 )
                 ->first();
             return response()->json([
-                'data' => $warehouseData
+                'data' => $unitData
             ]);
         } catch (ValidationException $e) {
             throw new \Exception('Validation failed: ' . $e->getMessage(), 422);
@@ -164,32 +129,17 @@ class WarehouseController extends Controller
             ], 401);
         }
         try {
-            $warehouse = Warehouse::where('authId', '=', Auth::user()->id)
-                ->select(
-                    'uuid',
-                    'name',
-                    'addressLine1',
-                    'addressLine2',
-                    'city',
-                    'contactPersonName',
-                    'gstNumber',
-                    'isActive',
-                    'isPrimaryWarehouse',
-                    'mobileNumber',
-                    'state',
-                    'country',
-                    'pincode',
-                    'regionDelivery',
-                    'orderBy',
-                    'deleted_at',
-                    'created_at',
-                    'updated_at'
-                )
-
-                ->get();
+            $unit = Unit::where('authId', '=', Auth::user()->id)
+            ->select(
+                'uuid',
+                'unitName',
+                'deleted_at',
+                'created_at',
+                'updated_at'
+            )->get();
 
             return response()->json([
-                "data" => $warehouse
+                "data" => $unit
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
@@ -236,38 +186,24 @@ class WarehouseController extends Controller
         }
         try {
           
-            $warehouseExists = Warehouse::where('authId', Auth::user()->id)->where('uuid', $uuid)->exists();
+            $unitExists = Unit::where('authId', Auth::user()->id)->where('uuid', $uuid)->exists();
 
-            if ($warehouseExists) {
-                $warehouse = Warehouse::where('authId', Auth::user()->id)
+            if ($unitExists) {
+                $unit = Unit::where('authId', Auth::user()->id)
                 ->where('uuid', $uuid)->where('deleted_at', '=', null)
                 ->select(
                     'uuid',
-                    'name',
-                    'addressLine1',
-                    'addressLine2',
-                    'city',
-                    'contactPersonName',
-                    'gstNumber',
-                    'isActive',
-                    'isPrimaryWarehouse',
-                    'mobileNumber',
-                    'state',
-                    'country',
-                    'pincode',
-                    'regionDelivery',
-                    'orderBy',
+                    'unitName',
                     'deleted_at',
                     'created_at',
                     'updated_at'
-                )
-                  ->first();
+                )->first();
                 return response()->json([
-                    "data" => $warehouse
+                    "data" => $unit
                 ]);
             } else {
                 
-                 $array = [ 'No Warehouse Data Found'];
+                 $array = [ 'No Unit Data Found'];
                 return response([
                     'error'=>$array
                 ], 404);
@@ -317,22 +253,7 @@ class WarehouseController extends Controller
         $userId = auth()->id();
         // validation
         $validator = Validator::make($request->all(), [
-          'name'                => ['nullable', Rule::unique('warehouse', 'name')->where('authId', $userId)],
-            'addressLine1'        => 'nullable',
-            'addressLine2'        => 'nullable',
-            'city'                => 'nullable',
-            'contactPersonName'   => 'nullable',
-            'gstNumber'           => 'nullable',
-            'fssaiNumber'         => 'nullable',
-            'isActive'            => 'nullable|max:50',
-            'isPrimaryWarehouse'  => 'nullable|max:191',
-            'mobileNumber'        => 'nullable|numeric|min:10|max:14',
-            'state'               => 'nullable|max:60',
-            'country'             => 'nullable|max:80',
-            'pincode'             => 'nullable|max:8',
-            'regionDelivery'      => 'nullable',
-            'orderBy'             => 'nullable|numeric',
-            'seoData'             => 'nullable',
+          'unitName'                => ['nullable', Rule::unique('units', 'unitName')->where('authId', $userId)],
         ]);
         if ($validator->fails()) {
             $error = $validatorAuth->errors();
@@ -343,31 +264,18 @@ class WarehouseController extends Controller
         }
         try {
            
-            $warehouseExists = Warehouse::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->exists();
+            $warehouseExists = Unit::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->exists();
             if ($warehouseExists) {
                 $input = $request->all();
-                $warehouse = Warehouse::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->first();
+                $warehouse = Unit::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->first();
               
                 $warehouseData =  $warehouse->update($input);
-                 $warehouseUpdated = Warehouse::where('authId', Auth::user()->id)
+                 $warehouseUpdated = Unit::where('authId', Auth::user()->id)
                 ->where('uuid', $request->uuid)
                 ->where('deleted_at', '=', null)
                 ->select(
                     'uuid',
-                    'name',
-                    'addressLine1',
-                    'addressLine2',
-                    'city',
-                    'contactPersonName',
-                    'gstNumber',
-                    'isActive',
-                    'isPrimaryWarehouse',
-                    'mobileNumber',
-                    'state',
-                    'country',
-                    'pincode',
-                    'regionDelivery',
-                    'orderBy',
+                    'unitName',
                     'deleted_at',
                     'created_at',
                     'updated_at'
@@ -427,26 +335,13 @@ class WarehouseController extends Controller
             ], 401);
         }
         try {
-            $warehouse = Warehouse::where('authId', Auth::user()->id)->where('uuid', '=', $uuid);
+            $warehouse = Unit::where('authId', Auth::user()->id)->where('uuid', '=', $uuid);
 
             $warehouseData = $warehouse->delete();
-            $warehouseDelete = Warehouse::withTrashed()
+            $warehouseDelete = Unit::withTrashed()
             ->select(
                 'uuid',
-                'name',
-                'addressLine1',
-                'addressLine2',
-                'city',
-                'contactPersonName',
-                'gstNumber',
-                'isActive',
-                'isPrimaryWarehouse',
-                'mobileNumber',
-                'state',
-                'country',
-                'pincode',
-                'regionDelivery',
-                'orderBy',
+                'unitName',
                 'deleted_at',
                 'created_at',
                 'updated_at'
@@ -470,7 +365,7 @@ class WarehouseController extends Controller
      */
     public function trashed(Request $request)
     {
-        $authToken = $request->header('Authtoken');
+          $authToken = $request->header('Authtoken');
 
         $validatorAuth = Validator::make(
             ['Authtoken' => $authToken],
@@ -485,7 +380,7 @@ class WarehouseController extends Controller
             ], 401);
         }
 
-        $jwtToken = $request->header('Authorization');
+        $jwtToken = $request->bearerToken();
 
         $validatorAccess = Validator::make(
             ['Authorization' => $jwtToken],
@@ -500,22 +395,9 @@ class WarehouseController extends Controller
         }
         try {
 
-            $warehouse = Warehouse::select(
+            $warehouse = Unit::select(
                 'uuid',
-                'name',
-                'addressLine1',
-                'addressLine2',
-                'city',
-                'contactPersonName',
-                'gstNumber',
-                'isActive',
-                'isPrimaryWarehouse',
-                'mobileNumber',
-                'state',
-                'country',
-                'pincode',
-                'regionDelivery',
-                'orderBy',
+                'unitName',
                 'deleted_at',
                 'created_at',
                 'updated_at'
@@ -569,24 +451,11 @@ class WarehouseController extends Controller
             ], 401);
         }
         try {
-            $warehouse = Warehouse::withTrashed()->where('uuid', '=', $request->uuid);
+            $warehouse = Unit::withTrashed()->where('uuid', '=', $request->uuid);
             $warehouse->restore();
-            $warehouseRestore = Warehouse::select(
+            $warehouseRestore = Unit::select(
                 'uuid',
-                'name',
-                'addressLine1',
-                'addressLine2',
-                'city',
-                'contactPersonName',
-                'gstNumber',
-                'isActive',
-                'isPrimaryWarehouse',
-                'mobileNumber',
-                'state',
-                'country',
-                'pincode',
-                'regionDelivery',
-                'orderBy',
+                'unitName',
                 'deleted_at',
                 'created_at',
                 'updated_at'

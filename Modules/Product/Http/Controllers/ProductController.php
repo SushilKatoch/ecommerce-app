@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\Product\Entities\Product;
+use Modules\Product\Entities\productCategories;
+use Modules\Unit\Entities\Unit;
 
 class ProductController extends Controller
 {
@@ -60,7 +62,8 @@ class ProductController extends Controller
         $userId = auth()->id();
         // validation
         $validator = Validator::make($request->all(), [
-            'productName'               => ['required', Rule::unique('products', 'name')->where('authId', $userId)],
+            'productName'              => ['required', Rule::unique('products', 'productName')->where('authId', $userId)],
+            // 'slug'              => 'nullable|max:191|unique:product_categories',
             'productSkuCode'            => 'nullable',
             'productCondition'          => 'required',
             'productDescription'        => 'nullable',
@@ -76,11 +79,15 @@ class ProductController extends Controller
             'productQuantity'           => 'nullable',
             'productWeight'             => 'nullable',
             'weightUnit'                => 'nullable',
+            'shipmentWeight'            => 'nullable',
             'hsnCode'                   => 'nullable',
             'gstRate'                   => 'nullable',
+            'inStock'                   => 'nullable',
+            'isActive'                  => 'nullable|max:50',
+            'isTaxable'                 => 'nullable',
             'variantId'                 => 'nullable',
             'tags'                      => 'nullable',
-            'storeUuid'                 => 'nullable',
+            'storeUuid'                 => 'nullable|numeric',
             'countryOfOrigin'           => 'nullable',
             'manufacturingAddress'      => 'nullable',
             'seoData'                   => 'nullable',
@@ -93,23 +100,33 @@ class ProductController extends Controller
             ], 400);
         }
         try {
+
+            if($request->productCategoryId)
+            {
+                $productCategory = productCategories::where('authId',auth()->id())
+                ->where('uuid',$request->productCategoryId)->first();
+            }
             $input = $request->all();
 
             $productOrder = Product::where('authId', auth()->id())->count();
-            $input['slug'] = Str::slug($request->name);
+          
+            $input['slug'] = Str::slug($request->productName);
             $input['uuid'] = Str::uuid()->getHex();
             $input['authId'] = Auth::user()->id;
             $input['orderBy'] = ++$productOrder;
-
-            if ($request->ImageId == null) {
-                $input['categoryImageId'] = '6fe520f76a014a3a9f9671be8a766012';
+            $unit = Unit::where('authId',auth()->id())->where('uuid',$request->unitId)->first();
+            $input['unit'] = $unit->unitName;
+            $weight= Unit::where('authId',auth()->id())->where('uuid',$request->weightUnitId)->first();
+            $input['weight'] = $weight->unitName;
+            if ($request->imagesId == null) {
+                $input['imagesId'] = '6fe520f76a014a3a9f9671be8a766012';
             }
 
             $product = Product::create($input);
 
             $productCategory = Product::where('authId', Auth::user()->id)
                 ->where('uuid', $product->uuid)->where('deleted_at', '=', null)
-               
+                ->with('category')
                 ->first();
             return response()->json([
                 'data' => $productCategory
@@ -155,8 +172,9 @@ class ProductController extends Controller
         }
         try {
             $product = Product::where('authId', '=', Auth::user()->id)
-               
-
+                ->with('variants')
+                ->with('productCategory')
+                ->with('warehouse')
                 ->get();
 
             return response()->json([
@@ -164,9 +182,9 @@ class ProductController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => $e->errors()], 422);
-        } catch (Exception $e) {
-            $array = ['Something went wrong'];
-            return response(['error' => $array], 500);
+        // } catch (Exception $e) {
+        //     $array = ['Something went wrong'];
+        //     return response(['error' => $array], 500);
         }
     }
 
@@ -212,6 +230,9 @@ class ProductController extends Controller
             if ($productExists) {
                 $product = Product::where('authId', Auth::user()->id)
                     ->where('uuid', $uuid)->where('deleted_at', '=', null)
+                    ->with('variants')
+                    ->with('productCategory')
+                    ->with('warehouse')
                     ->first();
                 return response()->json([
                     "data" => $product
@@ -238,6 +259,7 @@ class ProductController extends Controller
      */
     public function update(Request $request)
     {
+       
         $authToken = $request->header('Authtoken');
 
         $validatorAuth = Validator::make(
@@ -268,7 +290,7 @@ class ProductController extends Controller
         $userId = auth()->id();
         // validation
         $validator = Validator::make($request->all(), [
-            'productName'              => ['required', Rule::unique('products', 'name')->where('authId', $userId)],
+            'productName'              => ['nullable', Rule::unique('products', 'productName')->where('authId', $userId)],
             // 'slug'              => 'nullable|max:191|unique:product_categories',
             'productSkuCode'            => 'nullable',
             'productCategory'           => 'nullable',
@@ -306,21 +328,23 @@ class ProductController extends Controller
                 'error' =>  $errors,
             ], 400);
         }
+      
         try {
             $productExists = Product::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->exists();
             if ($productExists) {
+               
                 $input = $request->all();
                 $product = Product::where('authId', Auth::user()->id)->where('uuid', $request->uuid)->first();
-                if ($request->name) {
-                    $input['slug'] = Str::slug($request->name);
+                if ($request->productName) {
+                    $input['slug'] = Str::slug($request->productName);
                 }
 
                 $product =  $product->update($input);
-                $productUpdated = Product::where('authId', Auth::user()->id)
-                    ->where('uuid', $product->uuid)
+                
+                $productUpdated = Product::where('authId', auth()->id())
+                    ->where('uuid', $request->uuid)
                     ->where('deleted_at', '=', null)
-                    ->with('')
-                    ->with('banner')->first();
+                    ->first();
                 return response()->json([
                     "data" => $productUpdated
                 ]);
@@ -374,11 +398,10 @@ class ProductController extends Controller
             ], 401);
         }
         try {
-            $product = Product::where('authId', Auth::user()->id)->where('uuid', '=', $uuid);
+            $product = Product::where('authId', Auth::user()->id)->where('uuid', '=', $uuid)->first();
 
             $product = $product->delete();
-            $productDelete = Product::withTrashed()->select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
-                ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
+            $productDelete = Product::withTrashed()->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
                 "data" => $productDelete
             ]);
@@ -408,11 +431,11 @@ class ProductController extends Controller
             $error = $validatorAuth->errors();
             $errors = collect($error)->flatten();
             return response()->json([
-                'error' =>  $errors,
+                'status' => '400', 'error' =>  $errors,
             ], 401);
         }
 
-        $jwtToken = $request->header('Authorization');
+        $jwtToken = $request->bearerToken();
 
         $validatorAccess = Validator::make(
             ['Authorization' => $jwtToken],
@@ -423,12 +446,11 @@ class ProductController extends Controller
             $errors = collect($error)->flatten();
             return response()->json([
                 'error' =>  $errors,
-            ], 401);
+            ], 400);
         }
         try {
 
-            $product = Product::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
-                ->where('authId', Auth::user()->id)->onlyTrashed()->orderBy('deleted_at', 'desc')->paginate();
+            $product = Product::where('authId', Auth::user()->id)->onlyTrashed()->orderBy('deleted_at', 'desc')->paginate();
             return response()->json([
                 "data" => $product
             ]);
@@ -479,8 +501,7 @@ class ProductController extends Controller
         try {
             $product = Product::withTrashed()->where('uuid', '=', $request->uuid);
             $product->restore();
-            $productRestore = Product::select('uuid', 'name', 'slug', 'isActive', 'imagesId', 'bannerImageId', 'deleted_at', 'created_at', 'updated_at')
-                ->where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
+            $productRestore = Product::where('authId', Auth::user()->id)->where('uuid',  $uuid)->first();
             return response()->json([
                 "data" => $productRestore
             ]);
